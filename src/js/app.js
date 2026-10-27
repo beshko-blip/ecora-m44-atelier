@@ -25,7 +25,7 @@ const store = {
 let D, C, S, R, TR, view, stageTier, zoomTier = null;
 const layers = new Map();      // `${id}@${tier}` -> Promise<layers>
 const hitData = new Map();     // id -> {w,h,data}
-let personalized = false, highlight = -1, renderQueued = false, thumbTimer = 0, saveTimer = 0;
+let personalized = false, renderQueued = false, thumbTimer = 0, saveTimer = 0;
 const zoom = { s: 1, x: 0, y: 0 };
 
 const isMobile = () => window.matchMedia('(max-width: 1023px)').matches;
@@ -114,7 +114,7 @@ function drawStage() {
   const k = `${view}@${currentTier()}`;
   const p = layers.get(k);
   if (!p) return;
-  p.then(l => { const t0 = performance.now(); R.draw(k, l, zoneSetup(view), highlight); lastDraw = performance.now() - t0; });
+  p.then(l => { const t0 = performance.now(); R.draw(k, l, zoneSetup(view)); lastDraw = performance.now() - t0; });
 }
 let lastDraw = 0;
 // Замер для проверки бюджета «< 100 мс»: n перерисовок видимого кадра с ожиданием GPU (readPixels)
@@ -440,12 +440,11 @@ function bindStage(stage) {
 
   stage.addEventListener('pointermove', e => {
     if (e.pointerType === 'mouse' && !pts.size && matchMedia('(hover: hover)').matches) {
-      const z = zoneAt(e.clientX, e.clientY);
-      stage.classList.toggle('hot', z >= 0);
-      if (z !== highlight) { highlight = z; render(); }
+      // только курсор-«рука»: подсветка контура на фото выглядела как дефект маски
+      stage.classList.toggle('hot', zoneAt(e.clientX, e.clientY) >= 0);
     }
   });
-  stage.addEventListener('pointerleave', () => { if (highlight !== -1) { highlight = -1; stage.classList.remove('hot'); render(); } });
+  stage.addEventListener('pointerleave', () => stage.classList.remove('hot'));
 
   stage.addEventListener('pointerdown', e => {
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });

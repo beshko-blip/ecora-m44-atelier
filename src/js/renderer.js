@@ -53,7 +53,6 @@ precision highp float;
 in vec2 vUv; out vec4 o;
 uniform sampler2D uPhoto, uZones, uShade;
 uniform vec3 uT[3]; uniform float uYref[3]; uniform vec4 uP[3]; uniform vec2 uQ[3]; uniform float uOn[3];
-uniform int uHi; uniform vec2 uTexel;
 vec3 toLin(vec3 c){ return mix(c/12.92, pow((c+0.055)/1.055, vec3(2.4)), step(0.04045, c)); }
 vec3 toSrgb(vec3 c){ c = clamp(c,0.,1.); return mix(c*12.92, 1.055*pow(c, vec3(1./2.4))-0.055, step(0.0031308, c)); }
 float knee(float x){ float k=0.82; return x < k ? x : k + (1.-k)*(1.-exp(-(x-k)/(1.-k))); }
@@ -64,7 +63,6 @@ vec3 toneMap(vec3 c){
   if (mx > 1.) c = vec3(Yk) + (c - vec3(Yk)) * ((1. - Yk) / max(mx - Yk, 1e-6));
   return c;
 }
-float zoneA(vec2 uv, int i){ vec3 z = texture(uZones, uv).rgb; return i==0?z.r:(i==1?z.g:z.b); }
 void main(){
   vec3 c = toLin(texture(uPhoto, vUv).rgb);
   vec3 z = texture(uZones, vUv).rgb;
@@ -88,17 +86,6 @@ void main(){
     outc = mix(outc, res, a);
   }
   vec3 srgb = toSrgb(outc);
-  if(uHi >= 0){
-    float a0 = zoneA(vUv, uHi);
-    float mn = a0, mx = a0;
-    for(int k=0;k<4;k++){
-      vec2 d = (k==0?vec2(2.,0.):k==1?vec2(-2.,0.):k==2?vec2(0.,2.):vec2(0.,-2.))*uTexel;
-      float v = zoneA(vUv+d, uHi); mn=min(mn,v); mx=max(mx,v);
-    }
-    float edge = smoothstep(0.25, 0.6, mx-mn);
-    srgb = mix(srgb, vec3(1.), edge*0.85);
-    srgb = mix(srgb, srgb*1.06+0.02, a0*0.5);
-  }
   o = vec4(srgb, 1.);
 }`;
 
@@ -122,7 +109,7 @@ class GLRenderer {
     const loc = gl.getAttribLocation(p, 'aPos'); gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     this.u = {};
-    for (const n of ['uPhoto', 'uZones', 'uShade', 'uT', 'uYref', 'uP', 'uQ', 'uOn', 'uHi', 'uTexel']) this.u[n] = gl.getUniformLocation(p, n);
+    for (const n of ['uPhoto', 'uZones', 'uShade', 'uT', 'uYref', 'uP', 'uQ', 'uOn']) this.u[n] = gl.getUniformLocation(p, n);
     gl.uniform1i(this.u.uPhoto, 0); gl.uniform1i(this.u.uZones, 1); gl.uniform1i(this.u.uShade, 2);
     gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
@@ -145,7 +132,7 @@ class GLRenderer {
     for (const t of [e.photo, e.zones, e.shade]) this.gl.deleteTexture(t);
     this.cache.delete(key);
   }
-  draw(key, layers, zoneSetup, highlight = -1) {
+  draw(key, layers, zoneSetup) {
     const gl = this.gl, e = this.upload(key, layers);
     if (this.canvas.width !== e.w || this.canvas.height !== e.h) { this.canvas.width = e.w; this.canvas.height = e.h; }
     gl.viewport(0, 0, e.w, e.h);
@@ -157,7 +144,6 @@ class GLRenderer {
       else { T.push(0, 0, 0); Yr.push(1); P.push(0, 1, 1, 1); Q.push(9, 1); On.push(0); }
     });
     gl.uniform3fv(this.u.uT, T); gl.uniform1fv(this.u.uYref, Yr); gl.uniform4fv(this.u.uP, P); gl.uniform2fv(this.u.uQ, Q); gl.uniform1fv(this.u.uOn, On);
-    gl.uniform1i(this.u.uHi, highlight); gl.uniform2f(this.u.uTexel, 1 / e.w, 1 / e.h);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 }
