@@ -1,0 +1,197 @@
+// Перекраска фото по маскам зон. WebGL2, запасной вариант — Canvas 2D (та же математика на CPU).
+// Модель — копия tools/recolor.py (см. описание там).
+
+const ZONES = ['main', 'contrast', 'frame'];
+
+export function srgbToLin(x) {
+  return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+}
+export function hexToLin(hex) {
+  const h = hex.replace('#', '');
+  return [0, 2, 4].map(i => srgbToLin(parseInt(h.slice(i, i + 2), 16) / 255));
+}
+const lum = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+
+// Параметры зоны для конкретного целевого цвета (как в recolor.py)
+export function zoneParams(targetHex, profile) {
+  const T = hexToLin(targetHex);
+  const Yt = lum(T);
+  const lightness = Math.min(1, Math.max(0, (Yt - 0.08) / 0.5));
+  return {
+    T,
+    tau: profile.tau,
+    dg: 1 + (profile.detailLight - 1) * lightness,
+    gamma: 1 + (profile.gammaLight - 1) * lightness,
+    spec: profile.specGain + (profile.specLight - profile.specGain) * lightness,
+  };
+}
+
+async function loadBitmap(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('load ' + url);
+  const blob = await res.blob();
+  return createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+}
+
+// Загружает три слоя кадра одного размера
+export async function loadFrameLayers(base, id, tier) {
+  const [photo, zones, shade] = await Promise.all([
+    loadBitmap(`${base}assets/photos/${id}/${tier}.webp`),
+    loadBitmap(`${base}assets/masks/${id}/${tier}_zones.webp`),
+    loadBitmap(`${base}assets/masks/${id}/${tier}_shade.webp`),
+  ]);
+  return { photo, zones, shade, w: photo.width, h: photo.height };
+}
+
+const VS = `#version 300 es
+in vec2 aPos; out vec2 vUv;
+void main(){ vUv = vec2(aPos.x*0.5+0.5, 0.5-aPos.y*0.5); gl_Position = vec4(aPos,0.,1.); }`;
+
+const FS = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 o;
+uniform sampler2D uPhoto, uZones, uShade;
+uniform vec3 uT[3]; uniform float uYref[3]; uniform vec4 uP[3]; uniform float uOn[3];
+uniform int uHi; uniform vec2 uTexel;
+vec3 toLin(vec3 c){ return mix(c/12.92, pow((c+0.055)/1.055, vec3(2.4)), step(0.04045, c)); }
+vec3 toSrgb(vec3 c){ c = clamp(c,0.,1.); return mix(c*12.92, 1.055*pow(c, vec3(1./2.4))-0.055, step(0.0031308, c)); }
+vec3 knee(vec3 x){ float k=0.82; return mix(x, k + (1.-k)*(1.-exp(-(x-k)/(1.-k))), step(k, x)); }
+float zoneA(vec2 uv, int i){ vec3 z = texture(uZones, uv).rgb; return i==0?z.r:(i==1?z.g:z.b); }
+void main(){
+  vec3 c = toLin(texture(uPhoto, vUv).rgb);
+  vec3 z = texture(uZones, vUv).rgb;
+  vec3 s = texture(uShade, vUv).rgb;
+  float sh = (floor(s.r*255.+0.5)*256. + floor(s.g*255.+0.5)) / 65535. * 4.;
+  float Y = dot(c, vec3(0.2126,0.7152,0.0722));
+  vec3 outc = c;
+  for(int i=0;i<3;i++){
+    float a = i==0?z.r:(i==1?z.g:z.b);
+    if(uOn[i] < 0.5 || a <= 0.0) continue;
+    float Yr = uYref[i]; vec4 p = uP[i]; // tau, dg, gamma, spec
+    float rel = (Y - sh*Yr)/Yr;
+    float mul = pow(max(sh + clamp(rel, -sh, p.x)*p.y, 0.), p.z);
+    float spec = max(Y - sh*Yr - p.x*Yr, 0.) * p.w;
+    vec3 res = knee(uT[i]*mul + vec3(spec));
+    outc = mix(outc, res, a);
+  }
+  vec3 srgb = toSrgb(outc);
+  if(uHi >= 0){
+    float a0 = zoneA(vUv, uHi);
+    float mn = a0, mx = a0;
+    for(int k=0;k<4;k++){
+      vec2 d = (k==0?vec2(2.,0.):k==1?vec2(-2.,0.):k==2?vec2(0.,2.):vec2(0.,-2.))*uTexel;
+      float v = zoneA(vUv+d, uHi); mn=min(mn,v); mx=max(mx,v);
+    }
+    float edge = smoothstep(0.25, 0.6, mx-mn);
+    srgb = mix(srgb, vec3(1.), edge*0.85);
+    srgb = mix(srgb, srgb*1.06+0.02, a0*0.5);
+  }
+  o = vec4(srgb, 1.);
+}`;
+
+class GLRenderer {
+  constructor(canvas) {
+    const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: true, alpha: false });
+    if (!gl) throw new Error('no webgl2');
+    this.gl = gl; this.canvas = canvas; this.cache = new Map();
+    const sh = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    this.p = p; gl.useProgram(p);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(p, 'aPos'); gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    this.u = {};
+    for (const n of ['uPhoto', 'uZones', 'uShade', 'uT', 'uYref', 'uP', 'uOn', 'uHi', 'uTexel']) this.u[n] = gl.getUniformLocation(p, n);
+    gl.uniform1i(this.u.uPhoto, 0); gl.uniform1i(this.u.uZones, 1); gl.uniform1i(this.u.uShade, 2);
+    gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  }
+  tex(bmp) {
+    const gl = this.gl, t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, bmp);
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+    return t;
+  }
+  upload(key, layers) {
+    if (this.cache.has(key)) return this.cache.get(key);
+    const e = { photo: this.tex(layers.photo), zones: this.tex(layers.zones), shade: this.tex(layers.shade), w: layers.w, h: layers.h };
+    this.cache.set(key, e);
+    return e;
+  }
+  drop(key) {
+    const e = this.cache.get(key); if (!e) return;
+    for (const t of [e.photo, e.zones, e.shade]) this.gl.deleteTexture(t);
+    this.cache.delete(key);
+  }
+  draw(key, layers, zoneSetup, highlight = -1) {
+    const gl = this.gl, e = this.upload(key, layers);
+    if (this.canvas.width !== e.w || this.canvas.height !== e.h) { this.canvas.width = e.w; this.canvas.height = e.h; }
+    gl.viewport(0, 0, e.w, e.h);
+    [e.photo, e.zones, e.shade].forEach((t, i) => { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); });
+    const T = [], Yr = [], P = [], On = [];
+    ZONES.forEach((z, i) => {
+      const s = zoneSetup[z];
+      if (s) { T.push(...s.T); Yr.push(s.Yref); P.push(s.tau, s.dg, s.gamma, s.spec); On.push(1); }
+      else { T.push(0, 0, 0); Yr.push(1); P.push(0, 1, 1, 1); On.push(0); }
+    });
+    gl.uniform3fv(this.u.uT, T); gl.uniform1fv(this.u.uYref, Yr); gl.uniform4fv(this.u.uP, P); gl.uniform1fv(this.u.uOn, On);
+    gl.uniform1i(this.u.uHi, highlight); gl.uniform2f(this.u.uTexel, 1 / e.w, 1 / e.h);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+}
+
+// Canvas 2D: те же формулы на CPU (медленнее, но корректно)
+class CPURenderer {
+  constructor(canvas) { this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.cache = new Map(); }
+  pixels(bmp) {
+    const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+    const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bmp, 0, 0);
+    return x.getImageData(0, 0, c.width, c.height).data;
+  }
+  upload(key, l) {
+    if (this.cache.has(key)) return this.cache.get(key);
+    const e = { photo: this.pixels(l.photo), zones: this.pixels(l.zones), shade: this.pixels(l.shade), w: l.w, h: l.h };
+    const lut = new Float32Array(256); for (let i = 0; i < 256; i++) lut[i] = srgbToLin(i / 255);
+    e.lut = lut; this.cache.set(key, e); return e;
+  }
+  drop(key) { this.cache.delete(key); }
+  draw(key, layers, zoneSetup) {
+    const e = this.upload(key, layers), { w, h } = e;
+    if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; }
+    const out = this.ctx.createImageData(w, h), o = out.data, ph = e.photo, zn = e.zones, sd = e.shade, lut = e.lut;
+    const setups = ZONES.map(z => zoneSetup[z]);
+    const enc = v => { v = v <= 0 ? 0 : v >= 1 ? 1 : v; return Math.round((v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055) * 255); };
+    const knee = x => x < 0.82 ? x : 0.82 + 0.18 * (1 - Math.exp(-(x - 0.82) / 0.18));
+    for (let i = 0; i < w * h * 4; i += 4) {
+      let r = lut[ph[i]], g = lut[ph[i + 1]], b = lut[ph[i + 2]];
+      const za = [zn[i] / 255, zn[i + 1] / 255, zn[i + 2] / 255];
+      if (za[0] + za[1] + za[2] > 0) {
+        const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const sh = (sd[i] * 256 + sd[i + 1]) / 65535 * 4;
+        for (let k = 0; k < 3; k++) {
+          const s = setups[k], a = za[k]; if (!s || a <= 0) continue;
+          const rel = (Y - sh * s.Yref) / s.Yref;
+          const mul = Math.pow(Math.max(sh + Math.min(Math.max(rel, -sh), s.tau) * s.dg, 0), s.gamma);
+          const sp = Math.max(Y - sh * s.Yref - s.tau * s.Yref, 0) * s.spec;
+          r += (knee(s.T[0] * mul + sp) - r) * a; g += (knee(s.T[1] * mul + sp) - g) * a; b += (knee(s.T[2] * mul + sp) - b) * a;
+        }
+      }
+      o[i] = enc(r); o[i + 1] = enc(g); o[i + 2] = enc(b); o[i + 3] = 255;
+    }
+    this.ctx.putImageData(out, 0, 0);
+  }
+}
+
+export function createRenderer(canvas) {
+  try { return { r: new GLRenderer(canvas), kind: 'webgl2' }; }
+  catch (err) { console.warn('[atelier] WebGL2 недоступен, Canvas 2D', err); return { r: new CPURenderer(canvas), kind: 'canvas2d' }; }
+}

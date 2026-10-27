@@ -1,0 +1,6 @@
+{
+  "_doc": "Коллекции материалов. Новая коллекция = новый JSON в data/ той же схемы + строка здесь. idPrefix — первая буква ID образцов (уникальна между коллекциями).",
+  "collections": [
+    {"id": "kunpeng", "file": "data/palette_kunpeng.json", "idPrefix": "K", "profile": "upholstery", "hiddenSwatches": ["K51", "K53"]}
+  ]
+}

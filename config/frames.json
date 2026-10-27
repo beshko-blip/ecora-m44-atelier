@@ -1,0 +1,12 @@
+{
+  "_doc": "Варианты рамы. mode: original — исходное фото; recolor — перекраска по маске; photo — заменить базовый кадр (на будущее, после пересъёмки). code — часть ID конфигурации.",
+  "frames": [
+    {"id": "black",  "code": "FB", "mode": "recolor", "hex": "#1F2022", "hidden": false},
+    {"id": "green",  "code": "FG", "mode": "original", "hex": "#049D67", "hidden": false},
+    {"id": "silver", "code": "FS", "mode": "recolor", "hex": "#B9BBBD", "hidden": false}
+  ],
+  "ropes": [
+    {"id": "black", "code": "RB", "mode": "original", "hex": "#151515", "hidden": false},
+    {"id": "white", "code": "RW", "mode": "photo", "hex": "#F2F2EE", "hidden": true, "hiddenReason": "перекраска чёрного троса в белый не прошла тест (review/phase1/rope_attempt.jpg) — нужна досъёмка"}
+  ]
+}

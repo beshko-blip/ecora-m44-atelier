@@ -1,0 +1,11 @@
+{
+  "_doc": "6 готовых сочетаний. Только реальные номера образцов. Подобраны по перекрашенному кадру 0350 (review/presets/). WORKING DECISION — на утверждение Петру.",
+  "presets": [
+    {"id": "light",    "collection": "kunpeng", "main": "K09", "contrast": "K10", "frame": "silver", "rope": "black"},
+    {"id": "mono",     "collection": "kunpeng", "main": "K44", "contrast": "K31", "frame": "black",  "rope": "black"},
+    {"id": "nature",   "collection": "kunpeng", "main": "K50", "contrast": "K56", "frame": "green",  "rope": "black"},
+    {"id": "warm",     "collection": "kunpeng", "main": "K22", "contrast": "K25", "frame": "black",  "rope": "black"},
+    {"id": "contrast", "collection": "kunpeng", "main": "K41", "contrast": "K42", "frame": "silver", "rope": "black"},
+    {"id": "author",   "collection": "kunpeng", "main": "K55", "contrast": "K44", "frame": "black",  "rope": "black"}
+  ]
+}
