@@ -1,6 +1,9 @@
 {
   "product": "M44",
-  "price": {"custom": 280000, "currency": "RUB"},
+  "price": {
+    "custom": 280000,
+    "currency": "RUB"
+  },
   "showPrice": false,
   "contacts": {
     "site": "ecorafitness.ru",
@@ -11,10 +14,35 @@
   },
   "publicUrl": "https://ecorafitness.ru/m44",
   "heroFrame": "0350",
-  "frameOrder": ["0350", "0438", "0372", "0368", "0453", "0718"],
+  "frameOrder": [
+    "0350",
+    "0438",
+    "0453",
+    "0368",
+    "0718"
+  ],
   "hiddenFrames": [],
-  "defaultConfig": {"collection": "kunpeng", "main": "K50", "contrast": "K56", "frame": "green", "rope": "black"},
-  "lead": {"mode": "auto", "_modeDoc": "auto: в iframe — postMessage родителю (Tilda), отдельно — экран карточки и контакты"},
-  "analytics": {"metrikaId": null, "consoleLog": true},
-  "storageKey": "ecora-atelier:m44"
+  "defaultConfig": {
+    "collection": "kunpeng",
+    "main": "K50",
+    "contrast": "K56",
+    "frame": "green",
+    "rope": "black"
+  },
+  "lead": {
+    "mode": "auto",
+    "_modeDoc": "auto: в iframe — postMessage родителю (Tilda), отдельно — экран карточки и контакты"
+  },
+  "analytics": {
+    "metrikaId": null,
+    "consoleLog": true
+  },
+  "storageKey": "ecora-atelier:m44",
+  "frameRoles": {
+    "0350": "hero",
+    "0438": "profile",
+    "0453": "three-quarter",
+    "0368": "material-detail",
+    "0718": "design-detail"
+  }
 }

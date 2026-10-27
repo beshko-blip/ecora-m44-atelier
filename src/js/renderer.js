@@ -10,6 +10,7 @@ export function hexToLin(hex) {
   const h = hex.replace('#', '');
   return [0, 2, 4].map(i => srgbToLin(parseInt(h.slice(i, i + 2), 16) / 255));
 }
+const lerp = (a, b, t) => a + (b - a) * t;
 const lum = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 
 // Параметры зоны для конкретного целевого цвета (как в recolor.py)
@@ -23,7 +24,8 @@ export function zoneParams(targetHex, profile) {
     dg: 1 + (profile.detailLight - 1) * lightness,
     gamma: 1 + (profile.gammaLight - 1) * lightness,
     spec: profile.specGain + (profile.specLight - profile.specGain) * lightness,
-    shCap: profile.shCap ?? 9, shSlope: profile.shSlope ?? 1,
+    shCap: lerp(profile.shCap ?? 9, profile.shCapLight ?? profile.shCap ?? 9, lightness),
+    shSlope: lerp(profile.shSlope ?? 1, profile.shSlopeLight ?? profile.shSlope ?? 1, lightness),
   };
 }
 
@@ -69,7 +71,7 @@ void main(){
   vec3 s = texture(uShade, vUv).rgb;
   float sh = (floor(s.r*255.+0.5)*256. + floor(s.g*255.+0.5)) / 65535. * 4.;
   float Y = dot(c, vec3(0.2126,0.7152,0.0722));
-  vec3 outc = c;
+  vec3 acc = vec3(0.); float asum = 0.; // разбиение единицы: исходник·(1−Σa) + Σ res·a
   for(int i=0;i<3;i++){
     float a = i==0?z.r:(i==1?z.g:z.b);
     if(uOn[i] < 0.5 || a <= 0.0) continue;
@@ -83,8 +85,9 @@ void main(){
     float mul = pow(max(shd*(1. + det*mix(p.y, 1., w)), 0.), p.z);
     float spec = max(Y - base*(1. + p.x), 0.) * p.w;
     vec3 res = toneMap(uT[i]*mul + vec3(spec + broad));
-    outc = mix(outc, res, a);
+    acc += res * a; asum += a;
   }
+  vec3 outc = c * (1. - min(asum, 1.)) + acc;
   vec3 srgb = toSrgb(outc);
   o = vec4(srgb, 1.);
 }`;
@@ -183,6 +186,7 @@ class CPURenderer {
       if (za[0] + za[1] + za[2] > 0) {
         const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
         const sh = (sd[i] * 256 + sd[i + 1]) / 65535 * 4;
+        let ar = 0, ag = 0, ab = 0, aSum = 0;
         for (let k = 0; k < 3; k++) {
           const s = setups[k], a = za[k]; if (!s || a <= 0) continue;
           const base = Math.max(sh * s.Yref, 1e-5);
@@ -191,8 +195,10 @@ class CPURenderer {
           const mul = Math.pow(Math.max(shd * (1 + det * (s.dg + (1 - s.dg) * w)), 0), s.gamma);
           const sp = Math.max(Y - base * (1 + s.tau), 0) * s.spec + (sh - shd) * s.Yref;
           const c = tone([s.T[0] * mul + sp, s.T[1] * mul + sp, s.T[2] * mul + sp]);
-          r += (c[0] - r) * a; g += (c[1] - g) * a; b += (c[2] - b) * a;
+          ar += c[0] * a; ag += c[1] * a; ab += c[2] * a; aSum += a;
         }
+        const k = 1 - Math.min(aSum, 1);
+        r = r * k + ar; g = g * k + ag; b = b * k + ab;
       }
       o[i] = enc(r); o[i + 1] = enc(g); o[i + 2] = enc(b); o[i + 3] = 255;
     }

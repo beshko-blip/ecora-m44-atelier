@@ -1,8 +1,10 @@
 // ECORA M44 Digital Atelier — приложение.
-import { createRenderer, loadFrameLayers, zoneParams } from './renderer.js';
-import { BASE, loadAll, encodeId, decodeId, validState, findSwatch, FAMILY_ORDER } from './data.js';
-import { initBridge, on, post, track, inFrame } from './bridge.js';
-import { buildCard, logoImage } from './card.js';
+import { createRenderer, loadFrameLayers, zoneParams } from './renderer.js?v=9138ee0a';
+import { BASE, loadAll, encodeId, decodeId, validState, findSwatch, FAMILY_ORDER } from './data.js?v=9138ee0a';
+import { initBridge, on, post, track, inFrame } from './bridge.js?v=9138ee0a';
+import { buildCard, logoImage } from './card.js?v=9138ee0a';
+import { loadScheme, paintScheme } from './scheme.js?v=9138ee0a';
+import { loadLibrary, findShot, pickSrc } from './library.js?v=9138ee0a';
 
 const LOGO_VIEWBOX = '150 248 296 126';
 const $ = (s, r = document) => r.querySelector(s);
@@ -25,6 +27,7 @@ const store = {
 let D, C, S, R, TR, view, stageTier, zoomTier = null;
 const layers = new Map();      // `${id}@${tier}` -> Promise<layers>
 const hitData = new Map();     // id -> {w,h,data}
+let scheme = null;            // данные мини-схемы (кадр 480 + маска зон)
 let personalized = false, renderQueued = false, thumbTimer = 0, saveTimer = 0;
 const zoom = { s: 1, x: 0, y: 0 };
 
@@ -47,12 +50,15 @@ async function boot() {
   TR = createRenderer(document.createElement('canvas')).r;
   stageTier = pickTier();
   await showView(view);
+  loadLibrary(BASE).then(updateShot);
+  loadScheme(BASE, D.site.heroFrame).then(s => { scheme = s; paintSchemes(); }).catch(e => console.warn(e));
   document.documentElement.classList.add('ready');
   track('atelier_open', { config_id: encodeId(D, S), renderer: r.kind, embedded: inFrame });
   scheduleThumbs(0);
   // предзагрузка остальных кадров в фоне
   D.order.forEach(id => getLayers(id, 480));
-  window.addEventListener('resize', () => { const t = pickTier(); if (t !== stageTier) { stageTier = t; showView(view); } });
+  window.addEventListener('resize', () => { const t = pickTier(); if (t !== stageTier) { stageTier = t; showView(view); } else { placeShot(); updateShot(); } });
+  matchMedia('(max-width: 1023px)').addEventListener('change', placePresets);
   on('lead-submitted', () => { track('lead_submit', { config_id: encodeId(D, S) }); openResult('submitted'); });
   on('lead-error', () => track('lead_submit_error', {}));
 }
@@ -91,6 +97,7 @@ async function showView(id) {
   stage.classList.toggle('portrait', !!D.frameById.get(id).portrait);
   stage.setAttribute('aria-busy', 'true');
   resetZoom();
+  updateShot();
   // мгновенно — миниатюра, затем полноценный tier
   try {
     const small = await getLayers(id, 480);
@@ -111,6 +118,7 @@ async function showView(id) {
 function currentTier() { return zoomTier && R.cache.has(`${view}@${zoomTier}`) ? zoomTier : stageTier; }
 
 function drawStage() {
+  updateShot();
   const k = `${view}@${currentTier()}`;
   const p = layers.get(k);
   if (!p) return;
@@ -175,7 +183,7 @@ function setState(patch, event, props = {}) {
   if (!validState(D, S)) { S = prev; return; }
   if (!personalized) { personalized = true; track('personalize_start', { first: event }); }
   if (event) track(event, { ...props, config_id: encodeId(D, S) });
-  render(); scheduleThumbs(); syncUI();
+  updateShot(); render(); scheduleThumbs(); syncUI();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persist, 250);
 }
@@ -248,19 +256,44 @@ function paletteBlock(kind) {
     el('p', { class: 'disclaimer', text: C.palette.disclaimer }));
 }
 
-function current(kind) {
-  return el('div', { class: 'current', 'data-current': kind },
-    el('span', { class: 'big-dot' }), el('span', { class: 'cur-text' }));
+// «Сейчас выбираете»: мини-схема зоны + имя зоны + текущий образец + сноска с деталями. Липкий внутри шага.
+function nowBlock(kind) {
+  return el('div', { class: 'now', 'data-now': kind },
+    el('canvas', { class: 'scheme', width: 480, height: 320, role: 'img', 'data-scheme': kind }),
+    el('div', { class: 'now-text' },
+      el('span', { class: 'now-label', text: C.zones.now }),
+      el('span', { class: 'now-line' },
+        el('span', { class: 'now-zone', text: C.zones[kind] }),
+        el('span', { class: 'now-val' }, el('span', { class: 'now-dot', 'aria-hidden': 'true' }), el('span', { class: 'now-sw' }))),
+      el('span', { class: 'now-parts', text: C.zones[kind + 'Parts'] })));
 }
 
-function step(no, key, title, hint, body) {
+function zoneValue(kind, d = describe()) {
+  if (kind === 'main') return { text: d.main, hex: d.mainHex };
+  if (kind === 'contrast') return { text: d.contrast, hex: d.contrastHex };
+  if (kind === 'frame') return { text: d.frame, hex: d.fr.hex };
+  return { text: d.rope, hex: d.ro.hex };
+}
+
+function paintSchemes() {
+  if (!scheme) return;
+  const d = describe();
+  document.querySelectorAll('.step.open canvas[data-scheme]').forEach(cv => {
+    const k = cv.dataset.scheme, v = zoneValue(k, d);
+    paintScheme(cv, scheme, k, v.hex);
+    cv.setAttribute('aria-label', fmt(C.zones.scheme, { zone: C.zones[k], value: v.text }));
+  });
+}
+
+function step(no, key, title, body) {
+  const hint = ['main', 'contrast', 'frame'].includes(key) ? nowBlock(key) : null;
   const id = `step-${key}`;
   return el('section', { class: 'step', 'data-step': key },
     el('h2', {},
       el('button', { class: 'step-head', type: 'button', 'aria-expanded': 'false', 'aria-controls': id, onclick: () => openStep(key, true) },
         el('span', { class: 'step-no', text: no }), el('span', { class: 'step-title', text: title }),
         el('span', { class: 'step-val', 'data-val': key }))),
-    el('div', { class: 'step-body', id, hidden: true }, hint ? el('p', { class: 'hint', text: hint }) : null, body));
+    el('div', { class: 'step-body', id, hidden: true }, hint, body));
 }
 
 function openStep(key, toggle = false) {
@@ -271,13 +304,15 @@ function openStep(key, toggle = false) {
     $('.step-body', s).hidden = !open;
     if (open && (key === 'main' || key === 'contrast')) track('palette_open', { step: key });
   });
+  paintSchemes();
   const opening = isMobile() && sheetState === 'min';
   if (opening) setSheet('half');
   const s = document.querySelector(`.step[data-step="${key}"]`);
   if (s?.classList.contains('open')) setTimeout(() => {
     const box = $('.panel-scroll');
-    box.scrollTo({ top: s.offsetTop - box.offsetTop - 4, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-  }, opening ? 340 : 30);
+    const smooth = !opening && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    box.scrollTo({ top: s.offsetTop - box.offsetTop, behavior: smooth ? 'smooth' : 'auto' });
+  }, opening ? 360 : 30);
 }
 
 function buildUI() {
@@ -294,18 +329,25 @@ function buildUI() {
     }, el('canvas', { width: 48, height: 32 }))));
 
   const stage = el('div', { class: 'stage', tabindex: '0', role: 'img', 'aria-label': C.a11y.stage },
-    el('div', { class: 'zoomer' }, el('canvas', { id: 'stage-canvas' })),
+    el('div', { class: 'zoomer' }, el('canvas', { id: 'stage-canvas' }), el('img', { class: 'shot', alt: '', 'aria-hidden': 'true', decoding: 'async', hidden: true })),
     el('button', { class: 'zoom-out', type: 'button', hidden: true, text: C.stage.zoomOut, onclick: () => resetZoom(true) }),
-    el('span', { class: 'zoom-hint', text: C.stage.zoomHint }));
+    el('span', { class: 'stage-note', hidden: true, text: C.ropes.stageNote }),
+    el('span', { class: 'zoom-hint', text: matchMedia('(hover: hover) and (pointer: fine)').matches ? C.stage.zoomHintDesktop : C.stage.zoomHint }));
 
-  const presets = el('div', { class: 'presets' },
-    el('h2', { class: 'presets-title', text: C.presets.title }),
-    el('div', { class: 'preset-grid' }, D.presets.filter(p => findSwatch(D, p.main) && findSwatch(D, p.contrast)).map(p => {
+  const presets = el('section', { class: 'presets', 'aria-labelledby': 'presets-title' },
+    el('h2', { class: 'presets-title', id: 'presets-title', text: C.presets.title }),
+    el('p', { class: 'presets-sub', text: C.presets.sub }),
+    el('div', { class: 'preset-list' }, D.presets.filter(p => findSwatch(D, p.main) && findSwatch(D, p.contrast)).map(p => {
       const m = findSwatch(D, p.main).sw, c = findSwatch(D, p.contrast).sw;
+      const no = s => `${C.palette.number} ${String(s.n).padStart(2, '0')}`;
       return el('button', {
         class: 'preset', type: 'button', 'data-preset': p.id, 'aria-pressed': 'false',
         onclick: () => setState({ collection: p.collection, main: p.main, contrast: p.contrast, frame: p.frame, rope: p.rope }, 'preset_select', { preset: p.id }),
-      }, el('span', { class: 'duo', style: `--a:${m.hex};--b:${c.hex}` }), el('span', { class: 'preset-name', text: C.presets[p.id] || p.id }));
+      }, el('span', { class: 'duo', 'aria-hidden': 'true', style: `--a:${m.hex};--b:${c.hex}` }),
+         el('span', { class: 'preset-text' },
+           el('span', { class: 'preset-name', text: C.presets[p.id] || p.id }),
+           el('span', { class: 'preset-meta', text: `${no(m)} + ${no(c)} · ${C.presets.frame} ${(C.frames[p.frame + 'Adj'] || C.frames[p.frame]).toLowerCase()}` }),
+           C.presets[p.id + 'Note'] ? el('span', { class: 'preset-note', text: C.presets[p.id + 'Note'] }) : null));
     })));
 
   const material = el('div', { class: 'opts' }, D.collections.map(cl => el('button', {
@@ -330,14 +372,14 @@ function buildUI() {
       class: 'chip', type: 'button', 'data-rope': r.id, 'aria-pressed': 'false',
       onclick: () => setState({ rope: r.id }, 'rope_change', { rope: r.id }),
     }, el('span', { class: 'chip-dot', style: `--c:${r.hex}` }), el('span', { text: C.ropes[r.id] })))),
-    D.frames.ropes.some(r => r.hidden) ? el('p', { class: 'hint soft', text: C.ropes.hiddenNote }) : null);
+    el('p', { class: 'hint soft rope-note', hidden: true, text: C.ropes.previewNote }));
 
   const steps = el('div', { class: 'steps' },
-    step('01', 'material', C.steps.s01, null, material),
-    step('02', 'main', C.steps.s02, C.steps.s02hint, el('div', {}, current('main'), el('div', { 'data-palette': 'main' }, paletteBlock('main')))),
-    step('03', 'contrast', C.steps.s03, C.steps.s03hint, el('div', {}, current('contrast'), el('div', { 'data-palette': 'contrast' }, paletteBlock('contrast')))),
-    step('04', 'frame', C.steps.s04, null, frameOpts),
-    step('05', 'rope', C.steps.s05, C.steps.s05hint, ropeOpts));
+    step('01', 'material', C.steps.s01, material),
+    step('02', 'main', C.steps.s02, el('div', { 'data-palette': 'main' }, paletteBlock('main'))),
+    step('03', 'contrast', C.steps.s03, el('div', { 'data-palette': 'contrast' }, paletteBlock('contrast'))),
+    step('04', 'frame', C.steps.s04, frameOpts),
+    step('05', 'rope', C.steps.s05, el('div', {}, el('p', { class: 'hint', text: C.steps.s05hint }), ropeOpts)));
 
   const foot = el('div', { class: 'panel-foot' },
     el('div', { class: 'foot-row' },
@@ -346,25 +388,68 @@ function buildUI() {
         el('span', { 'aria-hidden': 'true', class: 'share-ico' }), el('span', { text: C.actions.share }))),
     el('button', { class: 'cta', type: 'button', onclick: cta }, el('span', { text: C.actions.cta }), el('span', { class: 'arrow', 'aria-hidden': 'true', text: '→' })));
 
-  const handle = el('button', { class: 'sheet-handle', type: 'button', 'aria-label': C.actions.sheetOpen, onclick: cycleSheet },
+  const handle = el('button', { class: 'sheet-handle', type: 'button', 'aria-label': C.actions.sheetLabelOpen, 'aria-expanded': 'false', onclick: cycleSheet },
     el('span', { class: 'grip', 'aria-hidden': 'true' }), el('span', { class: 'sheet-summary' }));
 
   const panel = el('aside', { class: 'panel', 'data-sheet': 'min' }, handle,
-    el('div', { class: 'panel-scroll' }, presets, steps), foot);
+    el('div', { class: 'panel-scroll' }, el('div', { class: 'presets-slot' }), steps), foot);
 
   app.append(
     el('header', { class: 'top' }, logo),
     el('main', { class: 'main' },
       el('section', { class: 'intro' },
         el('h1', { text: C.hero.title }), el('p', { class: 'lead', text: C.hero.lead }), el('p', { class: 'sub', text: C.hero.sub })),
-      el('section', { class: 'gallery' }, stage, views)),
+      el('section', { class: 'gallery' }, stage, views),
+      el('div', { class: 'presets-home' }, presets)),
     panel);
   document.body.append(
     el('div', { class: 'result', id: 'result', hidden: true, role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'result-title' }),
     el('div', { class: 'toast', role: 'status', 'aria-live': 'polite' }));
   bindStage(stage);
+  placePresets();
+  new ResizeObserver(placeShot).observe($('#stage-canvas'));
   bindSheet(panel, handle);
   syncUI();
+}
+
+// Коллекция сочетаний: на телефоне — на первом экране под фото, на десктопе — в панели.
+function placePresets() {
+  const p = $('.presets'), to = isMobile() ? $('.presets-home') : $('.presets-slot');
+  if (p && to && p.parentElement !== to) to.append(p);
+}
+
+// ---------- гибрид: готовое изображение из библиотеки или живая перекраска ----------
+let shotKey = '', shotPending = '';
+const shotBad = new Set();   // файлы, которых нет: не запрашиваем повторно
+function placeShot() {
+  const cv = $('#stage-canvas'), img = $('.shot'); if (!cv || !img) return;
+  Object.assign(img.style, { left: cv.offsetLeft + 'px', top: cv.offsetTop + 'px', width: cv.offsetWidth + 'px', height: cv.offsetHeight + 'px' });
+}
+function updateShot() {
+  const img = $('.shot'); if (!img) return;
+  const shot = findShot(D, S, view);
+  const need = ($('.stage').clientWidth || 800) * Math.min(window.devicePixelRatio || 1, 2) * (zoom.s > 1.2 ? 2 : 1);
+  let src = shot && pickSrc(BASE, shot, need);
+  if (src && shotBad.has(src.url)) src = null;
+  const key = src ? `${encodeId(D, S)}@${view}` : '';
+  if (!src) { shotKey = ''; shotPending = ''; delete img.dataset.w; img.hidden = true; img.removeAttribute('src'); $('.stage').classList.remove('library'); return; }
+  if (key === shotKey && (shotPending === src.url || (img.dataset.w && +img.dataset.w >= src.w))) return;
+  // пока грузится — виден живой рендер той же конфигурации; другое изображение не показываем
+  if (key !== shotKey) { delete img.dataset.w; img.hidden = true; $('.stage').classList.remove('library'); }
+  shotKey = key;
+  shotPending = src.url;
+  const off = () => { shotBad.add(src.url); shotPending = ''; if (shotKey === key) { shotKey = ''; img.hidden = true; $('.stage').classList.remove('library'); } };
+  // живой рендер той же конфигурации остаётся под фото — пустого кадра не бывает
+  const pre = new Image();
+  pre.onload = () => {
+    if (shotKey !== key) return;
+    img.onload = () => { if (shotKey === key) { img.hidden = false; placeShot(); $('.stage').classList.add('library'); } };
+    img.onerror = off;
+    if (img.getAttribute('src') === src.url) img.removeAttribute('src');
+    img.dataset.w = src.w; img.src = src.url; shotPending = '';
+  };
+  pre.onerror = off;
+  pre.src = src.url;
 }
 
 function rebuildPalettes() {
@@ -379,11 +464,13 @@ function syncUI() {
     b.setAttribute('aria-pressed', String(on));
     b.setAttribute('aria-label', fmt(C.a11y.swatch, { n: +b.dataset.id.slice(1), name: findSwatch(D, b.dataset.id)?.sw.name || '' }) + (on ? ', ' + C.a11y.selected : ''));
   });
-  for (const k of ['main', 'contrast']) {
-    const cur = document.querySelector(`[data-current="${k}"]`); if (!cur) continue;
-    $('.big-dot', cur).style.setProperty('--c', k === 'main' ? d.mainHex : d.contrastHex);
-    $('.cur-text', cur).textContent = k === 'main' ? d.main : d.contrast;
-  }
+  document.querySelectorAll('[data-now]').forEach(n => {
+    const v = zoneValue(n.dataset.now, d);
+    $('.now-dot', n).style.setProperty('--c', v.hex);
+    $('.now-dot', n).classList.toggle('metal', n.dataset.now === 'frame');
+    $('.now-sw', n).textContent = v.text;
+  });
+  paintSchemes();
   const vals = { material: d.coll, main: d.main, contrast: d.contrast, frame: d.frame, rope: d.rope };
   for (const [k, v] of Object.entries(vals)) { const n = document.querySelector(`[data-val="${k}"]`); if (n) n.textContent = v; }
   const dots = { main: d.mainHex, contrast: d.contrastHex };
@@ -391,16 +478,24 @@ function syncUI() {
   document.querySelectorAll('[data-coll]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.coll === S.collection)));
   document.querySelectorAll('[data-frame]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.frame === S.frame)));
   document.querySelectorAll('[data-rope]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.rope === S.rope)));
+  // опция без фото: выбирается и идёт в заявку, на снимке исходный вариант — говорим об этом прямо
+  const noPreview = d.ro.preview === false;
+  document.querySelectorAll('.rope-note, .stage-note').forEach(n => { n.hidden = !noPreview; });
   document.querySelectorAll('[data-preset]').forEach(b => {
     const p = D.presets.find(x => x.id === b.dataset.preset);
     b.setAttribute('aria-pressed', String(p.main === S.main && p.contrast === S.contrast && p.frame === S.frame && p.rope === S.rope));
   });
   $('.cfg-id').textContent = encodeId(D, S);
   const sum = $('.sheet-summary');
+  const no = s => `${C.palette.number} ${String(s.n).padStart(2, '0')}`;
   if (sum) sum.replaceChildren(
-    el('span', { class: 'mini-dot', style: `--c:${d.mainHex}` }), el('span', { class: 'mini-dot', style: `--c:${d.contrastHex}` }),
-    el('span', { text: `${d.main.split(' · ')[0]} + ${d.contrast.split(' · ')[0]} · ${C.frames[S.frame]}` }),
-    el('span', { class: 'sheet-cta', text: sheetState === 'min' ? C.actions.sheetOpen : C.actions.sheetClose }));
+    el('span', { class: 'sum-dots', 'aria-hidden': 'true' },
+      el('span', { class: 'mini-dot', style: `--c:${d.mainHex}` }), el('span', { class: 'mini-dot', style: `--c:${d.contrastHex}` }),
+      el('span', { class: 'mini-dot metal', style: `--c:${d.fr.hex}` })),
+    el('span', { class: 'sum-text' },
+      el('span', {}, el('b', { text: C.zones.mainShort }), ' ' + no(d.m)),
+      el('span', {}, el('b', { text: C.zones.contrastShort }), ' ' + no(d.c))),
+    el('span', { class: 'sheet-cta', 'data-dir': sheetState === 'full' ? 'down' : 'up', text: { min: C.actions.sheetOpen, half: C.actions.sheetExpand, full: C.actions.sheetClose }[sheetState] }));
 }
 
 // ---------- шторка (мобильные) ----------
@@ -408,7 +503,10 @@ let sheetState = 'min';
 function setSheet(s) {
   sheetState = s;
   const p = $('.panel'); p.dataset.sheet = s;
-  $('.sheet-handle').setAttribute('aria-expanded', String(s !== 'min'));
+  const h = $('.sheet-handle');
+  h.setAttribute('aria-expanded', String(s !== 'min'));
+  h.setAttribute('aria-label', s === 'min' ? C.actions.sheetLabelOpen : s === 'half' ? C.actions.sheetLabelFull : C.actions.sheetLabelClose);
+  document.body.dataset.sheet = s;
   // кадр остаётся главным: при открытой шторке заголовок сворачивается, фото поднимается
   document.body.classList.toggle('sheet-open', s !== 'min');
   if (s !== 'min' && isMobile()) window.scrollTo({ top: 0 });
@@ -520,6 +618,7 @@ function applyZoom() {
   if (zoom.s > 1.2 && !zoomTier) {
     track('zoom', { view });
     zoomTier = isMobile() ? 2400 : 3600;
+    updateShot();
     if (zoomTier > stageTier) getLayers(view, zoomTier).then(() => render()); else zoomTier = null;
   }
 }
@@ -555,6 +654,14 @@ function cta() {
 
 async function heroCanvas() {
   const id = D.site.heroFrame, tier = 1280;
+  const shot = findShot(D, S, id), src = shot && pickSrc(BASE, shot, 1280);
+  if (src) {
+    try {
+      const im = await new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = fail; i.src = src.url; });
+      const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+      c.getContext('2d').drawImage(im, 0, 0); return c;
+    } catch { /* нет файла — живой рендер */ }
+  }
   const l = await getLayers(id, tier);
   TR.draw(`${id}@${tier}`, l, zoneSetup(id));
   const c = document.createElement('canvas'); c.width = l.w; c.height = l.h;
@@ -597,7 +704,7 @@ async function openResult(mode) {
         { label: C.card.main, value: d.main, hex: d.mainHex },
         { label: C.card.contrast, value: d.contrast, hex: d.contrastHex },
         { label: C.card.frame, value: d.frame },
-        { label: C.card.rope, value: d.rope },
+        { label: C.card.rope, value: d.ro.preview === false ? `${d.rope} · ${C.ropes.cardNote}` : d.rope },
       ],
     });
     card.toBlob(b => { const u = URL.createObjectURL(b); img.src = u; dl.href = u; }, 'image/png');

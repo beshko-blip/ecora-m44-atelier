@@ -1,14 +1,16 @@
 {
- "_doc": "Профили перекраски. Совпадают с tools/recolor.py. tau — порог фактуры/блика (доля Y_ref); detailLight — сила фактуры для светлых целей; gammaLight — сжатие затенения для светлых; specGain/specLight — блик для тёмных/светлых целей. shCap/shSlope — выше shCap яркость грани считается отражением (нейтральный свет), а не освещённостью.",
+ "_doc": "Профили перекраски. Совпадают с tools/recolor.py. tau — порог фактуры/блика (доля Y_ref); detailLight — сила фактуры для светлых целей; gammaLight — сжатие затенения для светлых; specGain/specLight — блик для тёмных/светлых целей. shCap/shSlope — выше shCap яркость грани считается отражением (нейтральный свет), а не освещённостью. shCapLight/shSlopeLight — то же колено для светлых целей (интерполяция по светлоте цели, как detailLight).",
  "profiles": {
   "upholstery": {
    "tau": 0.18,
    "detailLight": 0.5,
-   "gammaLight": 0.8,
+   "gammaLight": 0.7,
    "specGain": 1.0,
    "specLight": 0.35,
    "shCap": 1.2,
-   "shSlope": 0.25
+   "shSlope": 0.25,
+   "shCapLight": 0.95,
+   "shSlopeLight": 0.2
   },
   "frame": {
    "tau": 0.1,
@@ -17,7 +19,9 @@
    "specGain": 1.0,
    "specLight": 0.8,
    "shCap": 2.0,
-   "shSlope": 0.6
+   "shSlope": 0.6,
+   "shCapLight": 2.0,
+   "shSlopeLight": 0.6
   }
  }
 }
