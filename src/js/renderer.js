@@ -23,6 +23,7 @@ export function zoneParams(targetHex, profile) {
     dg: 1 + (profile.detailLight - 1) * lightness,
     gamma: 1 + (profile.gammaLight - 1) * lightness,
     spec: profile.specGain + (profile.specLight - profile.specGain) * lightness,
+    shCap: profile.shCap ?? 9, shSlope: profile.shSlope ?? 1,
   };
 }
 
@@ -51,11 +52,18 @@ const FS = `#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
 uniform sampler2D uPhoto, uZones, uShade;
-uniform vec3 uT[3]; uniform float uYref[3]; uniform vec4 uP[3]; uniform float uOn[3];
+uniform vec3 uT[3]; uniform float uYref[3]; uniform vec4 uP[3]; uniform vec2 uQ[3]; uniform float uOn[3];
 uniform int uHi; uniform vec2 uTexel;
 vec3 toLin(vec3 c){ return mix(c/12.92, pow((c+0.055)/1.055, vec3(2.4)), step(0.04045, c)); }
 vec3 toSrgb(vec3 c){ c = clamp(c,0.,1.); return mix(c*12.92, 1.055*pow(c, vec3(1./2.4))-0.055, step(0.0031308, c)); }
-vec3 knee(vec3 x){ float k=0.82; return mix(x, k + (1.-k)*(1.-exp(-(x-k)/(1.-k))), step(k, x)); }
+float knee(float x){ float k=0.82; return x < k ? x : k + (1.-k)*(1.-exp(-(x-k)/(1.-k))); }
+vec3 toneMap(vec3 c){
+  float Y = max(dot(c, vec3(0.2126,0.7152,0.0722)), 1e-6), Yk = knee(Y);
+  c *= Yk / Y;
+  float mx = max(c.r, max(c.g, c.b));
+  if (mx > 1.) c = vec3(Yk) + (c - vec3(Yk)) * ((1. - Yk) / max(mx - Yk, 1e-6));
+  return c;
+}
 float zoneA(vec2 uv, int i){ vec3 z = texture(uZones, uv).rgb; return i==0?z.r:(i==1?z.g:z.b); }
 void main(){
   vec3 c = toLin(texture(uPhoto, vUv).rgb);
@@ -68,10 +76,15 @@ void main(){
     float a = i==0?z.r:(i==1?z.g:z.b);
     if(uOn[i] < 0.5 || a <= 0.0) continue;
     float Yr = uYref[i]; vec4 p = uP[i]; // tau, dg, gamma, spec
-    float rel = (Y - sh*Yr)/Yr;
-    float mul = pow(max(sh + clamp(rel, -sh, p.x)*p.y, 0.), p.z);
-    float spec = max(Y - sh*Yr - p.x*Yr, 0.) * p.w;
-    vec3 res = knee(uT[i]*mul + vec3(spec));
+    float base = max(sh*Yr, 1e-5);
+    float det = clamp(Y/base - 1., -1., p.x);
+    float w = clamp((-det - 0.12) / 0.25, 0., 1.);
+    vec2 q = uQ[i]; // shCap, shSlope
+    float shd = sh < q.x ? sh : q.x + (sh - q.x)*q.y;
+    float broad = (sh - shd) * Yr;
+    float mul = pow(max(shd*(1. + det*mix(p.y, 1., w)), 0.), p.z);
+    float spec = max(Y - base*(1. + p.x), 0.) * p.w;
+    vec3 res = toneMap(uT[i]*mul + vec3(spec + broad));
     outc = mix(outc, res, a);
   }
   vec3 srgb = toSrgb(outc);
@@ -109,7 +122,7 @@ class GLRenderer {
     const loc = gl.getAttribLocation(p, 'aPos'); gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     this.u = {};
-    for (const n of ['uPhoto', 'uZones', 'uShade', 'uT', 'uYref', 'uP', 'uOn', 'uHi', 'uTexel']) this.u[n] = gl.getUniformLocation(p, n);
+    for (const n of ['uPhoto', 'uZones', 'uShade', 'uT', 'uYref', 'uP', 'uQ', 'uOn', 'uHi', 'uTexel']) this.u[n] = gl.getUniformLocation(p, n);
     gl.uniform1i(this.u.uPhoto, 0); gl.uniform1i(this.u.uZones, 1); gl.uniform1i(this.u.uShade, 2);
     gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
@@ -137,13 +150,13 @@ class GLRenderer {
     if (this.canvas.width !== e.w || this.canvas.height !== e.h) { this.canvas.width = e.w; this.canvas.height = e.h; }
     gl.viewport(0, 0, e.w, e.h);
     [e.photo, e.zones, e.shade].forEach((t, i) => { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); });
-    const T = [], Yr = [], P = [], On = [];
+    const T = [], Yr = [], P = [], Q = [], On = [];
     ZONES.forEach((z, i) => {
       const s = zoneSetup[z];
-      if (s) { T.push(...s.T); Yr.push(s.Yref); P.push(s.tau, s.dg, s.gamma, s.spec); On.push(1); }
-      else { T.push(0, 0, 0); Yr.push(1); P.push(0, 1, 1, 1); On.push(0); }
+      if (s) { T.push(...s.T); Yr.push(s.Yref); P.push(s.tau, s.dg, s.gamma, s.spec); Q.push(s.shCap, s.shSlope); On.push(1); }
+      else { T.push(0, 0, 0); Yr.push(1); P.push(0, 1, 1, 1); Q.push(9, 1); On.push(0); }
     });
-    gl.uniform3fv(this.u.uT, T); gl.uniform1fv(this.u.uYref, Yr); gl.uniform4fv(this.u.uP, P); gl.uniform1fv(this.u.uOn, On);
+    gl.uniform3fv(this.u.uT, T); gl.uniform1fv(this.u.uYref, Yr); gl.uniform4fv(this.u.uP, P); gl.uniform2fv(this.u.uQ, Q); gl.uniform1fv(this.u.uOn, On);
     gl.uniform1i(this.u.uHi, highlight); gl.uniform2f(this.u.uTexel, 1 / e.w, 1 / e.h);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
@@ -171,6 +184,13 @@ class CPURenderer {
     const setups = ZONES.map(z => zoneSetup[z]);
     const enc = v => { v = v <= 0 ? 0 : v >= 1 ? 1 : v; return Math.round((v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055) * 255); };
     const knee = x => x < 0.82 ? x : 0.82 + 0.18 * (1 - Math.exp(-(x - 0.82) / 0.18));
+    const tone = c => {
+      const Y = Math.max(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], 1e-6), Yk = knee(Y);
+      for (let j = 0; j < 3; j++) c[j] *= Yk / Y;
+      const mx = Math.max(c[0], c[1], c[2]);
+      if (mx > 1) { const t = (1 - Yk) / Math.max(mx - Yk, 1e-6); for (let j = 0; j < 3; j++) c[j] = Yk + (c[j] - Yk) * t; }
+      return c;
+    };
     for (let i = 0; i < w * h * 4; i += 4) {
       let r = lut[ph[i]], g = lut[ph[i + 1]], b = lut[ph[i + 2]];
       const za = [zn[i] / 255, zn[i + 1] / 255, zn[i + 2] / 255];
@@ -179,10 +199,13 @@ class CPURenderer {
         const sh = (sd[i] * 256 + sd[i + 1]) / 65535 * 4;
         for (let k = 0; k < 3; k++) {
           const s = setups[k], a = za[k]; if (!s || a <= 0) continue;
-          const rel = (Y - sh * s.Yref) / s.Yref;
-          const mul = Math.pow(Math.max(sh + Math.min(Math.max(rel, -sh), s.tau) * s.dg, 0), s.gamma);
-          const sp = Math.max(Y - sh * s.Yref - s.tau * s.Yref, 0) * s.spec;
-          r += (knee(s.T[0] * mul + sp) - r) * a; g += (knee(s.T[1] * mul + sp) - g) * a; b += (knee(s.T[2] * mul + sp) - b) * a;
+          const base = Math.max(sh * s.Yref, 1e-5);
+          const det = Math.min(Math.max(Y / base - 1, -1), s.tau), w = Math.min(Math.max((-det - 0.12) / 0.25, 0), 1);
+          const shd = sh < s.shCap ? sh : s.shCap + (sh - s.shCap) * s.shSlope;
+          const mul = Math.pow(Math.max(shd * (1 + det * (s.dg + (1 - s.dg) * w)), 0), s.gamma);
+          const sp = Math.max(Y - base * (1 + s.tau), 0) * s.spec + (sh - shd) * s.Yref;
+          const c = tone([s.T[0] * mul + sp, s.T[1] * mul + sp, s.T[2] * mul + sp]);
+          r += (c[0] - r) * a; g += (c[1] - g) * a; b += (c[2] - b) * a;
         }
       }
       o[i] = enc(r); o[i + 1] = enc(g); o[i + 2] = enc(b); o[i + 3] = 255;
