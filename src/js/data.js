@@ -1,5 +1,5 @@
 // Загрузка конфигов и коллекций, семейства оттенков, ID конфигурации.
-import { hexToLin } from './renderer.js?v=9138ee0a';
+import { hexToLin } from './renderer.js?v=d010e5aa';
 
 export const BASE = new URL('../../', import.meta.url).href;
 

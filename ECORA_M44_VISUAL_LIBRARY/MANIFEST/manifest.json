@@ -1,425 +1,425 @@
 [
  {
   "model": "M44",
-  "preset": "monochrome",
+  "preset": "blacktitan",
   "main": "K44",
+  "contrast": "K45",
+  "frame": "FS",
+  "rope": "RB",
+  "view": "0350",
+  "role": "hero",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_blacktitan_K44-K45-FS_0350.jpg",
+  "web": {
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0350_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0350_2400.webp"
+  },
+  "status": "ready",
+  "version": 1
+ },
+ {
+  "model": "M44",
+  "preset": "blacktitan",
+  "main": "K44",
+  "contrast": "K45",
+  "frame": "FS",
+  "rope": "RB",
+  "view": "0438",
+  "role": "profile",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_blacktitan_K44-K45-FS_0438.jpg",
+  "web": {
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0438_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0438_2400.webp"
+  },
+  "status": "ready",
+  "version": 1
+ },
+ {
+  "model": "M44",
+  "preset": "blacktitan",
+  "main": "K44",
+  "contrast": "K45",
+  "frame": "FS",
+  "rope": "RB",
+  "view": "0453",
+  "role": "three-quarter",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_blacktitan_K44-K45-FS_0453.jpg",
+  "web": {
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0453_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0453_2400.webp"
+  },
+  "status": "ready",
+  "version": 1
+ },
+ {
+  "model": "M44",
+  "preset": "blacktitan",
+  "main": "K44",
+  "contrast": "K45",
+  "frame": "FS",
+  "rope": "RB",
+  "view": "0368",
+  "role": "material-detail",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_blacktitan_K44-K45-FS_0368.jpg",
+  "web": {
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0368_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0368_2400.webp"
+  },
+  "status": "ready",
+  "version": 1
+ },
+ {
+  "model": "M44",
+  "preset": "blacktitan",
+  "main": "K44",
+  "contrast": "K45",
+  "frame": "FS",
+  "rope": "RB",
+  "view": "0718",
+  "role": "design-detail",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_blacktitan_K44-K45-FS_0718.jpg",
+  "web": {
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0718_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_blacktitan_K44-K45-FS_0718_2400.webp"
+  },
+  "status": "ready",
+  "version": 1
+ },
+ {
+  "model": "M44",
+  "preset": "chalk",
+  "main": "K05",
   "contrast": "K45",
   "frame": "FB",
   "rope": "RB",
   "view": "0350",
   "role": "hero",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_monochrome_K44-K45-FB_0350.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_chalk_K05-K45-FB_0350.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0350_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0350_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0350_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0350_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "monochrome",
-  "main": "K44",
+  "preset": "chalk",
+  "main": "K05",
   "contrast": "K45",
   "frame": "FB",
   "rope": "RB",
   "view": "0438",
   "role": "profile",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_monochrome_K44-K45-FB_0438.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_chalk_K05-K45-FB_0438.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0438_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0438_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0438_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0438_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "monochrome",
-  "main": "K44",
+  "preset": "chalk",
+  "main": "K05",
   "contrast": "K45",
   "frame": "FB",
   "rope": "RB",
   "view": "0453",
   "role": "three-quarter",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_monochrome_K44-K45-FB_0453.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_chalk_K05-K45-FB_0453.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0453_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0453_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0453_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0453_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "monochrome",
-  "main": "K44",
+  "preset": "chalk",
+  "main": "K05",
   "contrast": "K45",
   "frame": "FB",
   "rope": "RB",
   "view": "0368",
   "role": "material-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_monochrome_K44-K45-FB_0368.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_chalk_K05-K45-FB_0368.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0368_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0368_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0368_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0368_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "monochrome",
-  "main": "K44",
+  "preset": "chalk",
+  "main": "K05",
   "contrast": "K45",
   "frame": "FB",
   "rope": "RB",
   "view": "0718",
   "role": "design-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_monochrome_K44-K45-FB_0718.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_chalk_K05-K45-FB_0718.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0718_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_monochrome_K44-K45-FB_0718_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0718_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_chalk_K05-K45-FB_0718_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "light",
-  "main": "K09",
-  "contrast": "K10",
-  "frame": "FS",
-  "rope": "RB",
-  "view": "0350",
-  "role": "hero",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_light_K09-K10-FS_0350.jpg",
-  "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0350_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0350_2400.webp"
-  },
-  "status": "ready",
-  "version": 1
- },
- {
-  "model": "M44",
-  "preset": "light",
-  "main": "K09",
-  "contrast": "K10",
-  "frame": "FS",
-  "rope": "RB",
-  "view": "0438",
-  "role": "profile",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_light_K09-K10-FS_0438.jpg",
-  "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0438_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0438_2400.webp"
-  },
-  "status": "ready",
-  "version": 1
- },
- {
-  "model": "M44",
-  "preset": "light",
-  "main": "K09",
-  "contrast": "K10",
-  "frame": "FS",
-  "rope": "RB",
-  "view": "0453",
-  "role": "three-quarter",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_light_K09-K10-FS_0453.jpg",
-  "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0453_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0453_2400.webp"
-  },
-  "status": "ready",
-  "version": 1
- },
- {
-  "model": "M44",
-  "preset": "light",
-  "main": "K09",
-  "contrast": "K10",
-  "frame": "FS",
-  "rope": "RB",
-  "view": "0368",
-  "role": "material-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_light_K09-K10-FS_0368.jpg",
-  "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0368_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0368_2400.webp"
-  },
-  "status": "ready",
-  "version": 1
- },
- {
-  "model": "M44",
-  "preset": "light",
-  "main": "K09",
-  "contrast": "K10",
-  "frame": "FS",
-  "rope": "RB",
-  "view": "0718",
-  "role": "design-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_light_K09-K10-FS_0718.jpg",
-  "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0718_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_light_K09-K10-FS_0718_2400.webp"
-  },
-  "status": "ready",
-  "version": 1
- },
- {
-  "model": "M44",
-  "preset": "natural",
-  "main": "K22",
-  "contrast": "K25",
+  "preset": "cognac",
+  "main": "K26",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0350",
   "role": "hero",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_natural_K22-K25-FB_0350.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_cognac_K26-K44-FB_0350.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0350_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0350_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0350_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0350_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "natural",
-  "main": "K22",
-  "contrast": "K25",
+  "preset": "cognac",
+  "main": "K26",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0438",
   "role": "profile",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_natural_K22-K25-FB_0438.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_cognac_K26-K44-FB_0438.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0438_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0438_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0438_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0438_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "natural",
-  "main": "K22",
-  "contrast": "K25",
+  "preset": "cognac",
+  "main": "K26",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0453",
   "role": "three-quarter",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_natural_K22-K25-FB_0453.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_cognac_K26-K44-FB_0453.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0453_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0453_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0453_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0453_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "natural",
-  "main": "K22",
-  "contrast": "K25",
+  "preset": "cognac",
+  "main": "K26",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0368",
   "role": "material-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_natural_K22-K25-FB_0368.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_cognac_K26-K44-FB_0368.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0368_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0368_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0368_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0368_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "natural",
-  "main": "K22",
-  "contrast": "K25",
+  "preset": "cognac",
+  "main": "K26",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0718",
   "role": "design-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_natural_K22-K25-FB_0718.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_cognac_K26-K44-FB_0718.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0718_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_natural_K22-K25-FB_0718_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0718_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_cognac_K26-K44-FB_0718_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "dark",
-  "main": "K41",
-  "contrast": "K42",
+  "preset": "bordeaux",
+  "main": "K29",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0350",
   "role": "hero",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_dark_K41-K42-FB_0350.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_bordeaux_K29-K44-FB_0350.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0350_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0350_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0350_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0350_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "dark",
-  "main": "K41",
-  "contrast": "K42",
+  "preset": "bordeaux",
+  "main": "K29",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0438",
   "role": "profile",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_dark_K41-K42-FB_0438.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_bordeaux_K29-K44-FB_0438.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0438_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0438_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0438_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0438_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "dark",
-  "main": "K41",
-  "contrast": "K42",
+  "preset": "bordeaux",
+  "main": "K29",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0453",
   "role": "three-quarter",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_dark_K41-K42-FB_0453.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_bordeaux_K29-K44-FB_0453.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0453_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0453_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0453_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0453_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "dark",
-  "main": "K41",
-  "contrast": "K42",
+  "preset": "bordeaux",
+  "main": "K29",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0368",
   "role": "material-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_dark_K41-K42-FB_0368.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_bordeaux_K29-K44-FB_0368.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0368_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0368_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0368_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0368_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "dark",
-  "main": "K41",
-  "contrast": "K42",
+  "preset": "bordeaux",
+  "main": "K29",
+  "contrast": "K44",
   "frame": "FB",
   "rope": "RB",
   "view": "0718",
   "role": "design-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_dark_K41-K42-FB_0718.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_bordeaux_K29-K44-FB_0718.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0718_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_dark_K41-K42-FB_0718_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0718_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_bordeaux_K29-K44-FB_0718_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "signature",
-  "main": "K50",
-  "contrast": "K56",
-  "frame": "FG",
+  "preset": "navigator",
+  "main": "K41",
+  "contrast": "K05",
+  "frame": "FS",
   "rope": "RB",
   "view": "0350",
   "role": "hero",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_signature_K50-K56-FG_0350.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_navigator_K41-K05-FS_0350.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0350_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0350_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0350_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0350_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "signature",
-  "main": "K50",
-  "contrast": "K56",
-  "frame": "FG",
+  "preset": "navigator",
+  "main": "K41",
+  "contrast": "K05",
+  "frame": "FS",
   "rope": "RB",
   "view": "0438",
   "role": "profile",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_signature_K50-K56-FG_0438.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_navigator_K41-K05-FS_0438.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0438_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0438_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0438_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0438_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "signature",
-  "main": "K50",
-  "contrast": "K56",
-  "frame": "FG",
+  "preset": "navigator",
+  "main": "K41",
+  "contrast": "K05",
+  "frame": "FS",
   "rope": "RB",
   "view": "0453",
   "role": "three-quarter",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_signature_K50-K56-FG_0453.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_navigator_K41-K05-FS_0453.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0453_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0453_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0453_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0453_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "signature",
-  "main": "K50",
-  "contrast": "K56",
-  "frame": "FG",
+  "preset": "navigator",
+  "main": "K41",
+  "contrast": "K05",
+  "frame": "FS",
   "rope": "RB",
   "view": "0368",
   "role": "material-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_signature_K50-K56-FG_0368.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_navigator_K41-K05-FS_0368.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0368_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0368_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0368_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0368_2400.webp"
   },
   "status": "ready",
   "version": 1
  },
  {
   "model": "M44",
-  "preset": "signature",
-  "main": "K50",
-  "contrast": "K56",
-  "frame": "FG",
+  "preset": "navigator",
+  "main": "K41",
+  "contrast": "K05",
+  "frame": "FS",
   "rope": "RB",
   "view": "0718",
   "role": "design-detail",
-  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_signature_K50-K56-FG_0718.jpg",
+  "master": "ECORA_M44_VISUAL_LIBRARY/MASTER/M44_navigator_K41-K05-FS_0718.jpg",
   "web": {
-   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0718_1280.webp",
-   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_signature_K50-K56-FG_0718_2400.webp"
+   "1280": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0718_1280.webp",
+   "2400": "ECORA_M44_VISUAL_LIBRARY/WEB/M44_navigator_K41-K05-FS_0718_2400.webp"
   },
   "status": "ready",
   "version": 1

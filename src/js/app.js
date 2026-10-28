@@ -1,10 +1,10 @@
 // ECORA M44 Digital Atelier — приложение.
-import { createRenderer, loadFrameLayers, zoneParams } from './renderer.js?v=9138ee0a';
-import { BASE, loadAll, encodeId, decodeId, validState, findSwatch, FAMILY_ORDER } from './data.js?v=9138ee0a';
-import { initBridge, on, post, track, inFrame } from './bridge.js?v=9138ee0a';
-import { buildCard, logoImage } from './card.js?v=9138ee0a';
-import { loadScheme, paintScheme } from './scheme.js?v=9138ee0a';
-import { loadLibrary, findShot, pickSrc } from './library.js?v=9138ee0a';
+import { createRenderer, loadFrameLayers, zoneParams } from './renderer.js?v=d010e5aa';
+import { BASE, loadAll, encodeId, decodeId, validState, findSwatch, FAMILY_ORDER } from './data.js?v=d010e5aa';
+import { initBridge, on, post, track, inFrame } from './bridge.js?v=d010e5aa';
+import { buildCard, logoImage } from './card.js?v=d010e5aa';
+import { loadScheme, paintScheme } from './scheme.js?v=d010e5aa';
+import { loadLibrary, findShot, pickSrc } from './library.js?v=d010e5aa';
 
 const LOGO_VIEWBOX = '150 248 296 126';
 const $ = (s, r = document) => r.querySelector(s);
