@@ -31,10 +31,14 @@ export function zoneParams(targetHex, profile) {
 }
 
 async function loadBitmap(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('load ' + url);
-  const blob = await res.blob();
-  return createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) throw new Error('load ' + url);
+    const blob = await res.blob();
+    return await createImageBitmap(blob, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+  } finally { clearTimeout(timer); }
 }
 
 // Загружает три слоя кадра одного размера
@@ -101,6 +105,7 @@ class GLRenderer {
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: true, alpha: false });
     if (!gl) throw new Error('no webgl2');
     this.gl = gl; this.canvas = canvas; this.cache = new Map();
+    gl.clearColor(1, 1, 1, 1); gl.clear(gl.COLOR_BUFFER_BIT);
     const sh = (type, src) => {
       const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
       if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
@@ -216,3 +221,4 @@ export function createRenderer(canvas) {
   try { return { r: new GLRenderer(canvas), kind: 'webgl2' }; }
   catch (err) { console.warn('[atelier] WebGL2 недоступен, Canvas 2D', err); return { r: new CPURenderer(canvas), kind: 'canvas2d' }; }
 }
+

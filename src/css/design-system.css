@@ -1,0 +1,47 @@
+/* ECORA M44: shared site tokens, loaded after app.css and before mobile.css. */
+:root{
+  --bg:#fff;
+  --ink:#434141;
+  --ink-2:#5f5d5d;
+  --ink-3:#676363;
+  --accent:#007472;
+  --accent-hover:#005f5d;
+  --accent-20:#cfe5e4;
+  --soft:#f5f7f6;
+  --line:#dfe6e4;
+  --control-border:#a4b4b0;
+  --control-radius:8px;
+  --button-radius:12px;
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-6:24px;
+  --space-8:32px;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+body{font-family:Montserrat,Arial,sans-serif;line-height:1.2}
+.cta,.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);border-radius:var(--button-radius);letter-spacing:0;line-height:1.2;min-height:52px}
+.cta:hover,.btn.primary:hover{background:var(--accent-hover)}
+.btn,.link{border-radius:var(--control-radius)}
+.link{border-color:var(--control-border);font-size:16px;line-height:1.2;min-height:48px}
+.intro h1{letter-spacing:-.025em}
+.intro .lead{font-weight:400;line-height:1.2}
+.intro .sub{font-weight:400;letter-spacing:0;text-transform:none;font-size:14px;line-height:1.2;color:var(--ink-2)}
+.presets-title{font-size:16px;line-height:1.2;text-transform:none;letter-spacing:0;color:var(--ink);font-weight:600}
+.presets-sub,.preset-meta,.preset-note,.hint,.step-val,.now-parts,.opt-note,.disclaimer,.result-sub,.link-label{font-weight:400;line-height:1.2}
+.fam-name,.contacts-title{font-size:12px;letter-spacing:0;text-transform:none;line-height:1.2}
+.opt,.chip{border-radius:var(--button-radius)}
+.opt[aria-pressed=true],.chip[aria-pressed=true]{border-color:var(--accent);background:#f1f7f4}
+.sw[aria-pressed=true] .dot{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(min-width:1024px){
+  .top{display:none}
+  .app{grid-template-rows:minmax(0,1fr);height:100svh;min-height:640px}
+  .main,.gallery{min-height:0}
+  .panel,.panel[data-sheet]{grid-row:1}
+  .intro{padding-top:32px}
+  .panel-scroll{padding-top:32px}
+  .stage{min-height:240px;max-height:none}
+  .stage:not(.portrait) #stage-canvas,.stage.portrait #stage-canvas{width:auto;height:auto}
+}

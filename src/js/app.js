@@ -1,10 +1,10 @@
 // ECORA M44 Digital Atelier — приложение.
-import { createRenderer, loadFrameLayers, zoneParams } from './renderer.js?v=d010e5aa';
-import { BASE, loadAll, encodeId, decodeId, validState, findSwatch, FAMILY_ORDER } from './data.js?v=d010e5aa';
-import { initBridge, on, post, track, inFrame } from './bridge.js?v=d010e5aa';
-import { buildCard, logoImage } from './card.js?v=d010e5aa';
-import { loadScheme, paintScheme } from './scheme.js?v=d010e5aa';
-import { loadLibrary, findShot, pickSrc } from './library.js?v=d010e5aa';
+import { createRenderer, loadFrameLayers, zoneParams } from './renderer.js?v=20261029-mobile-r2';
+import { BASE, loadAll, encodeId, decodeId, validState, findSwatch, FAMILY_ORDER } from './data.js?v=20261029-mobile-r2';
+import { initBridge, on, post, track, inFrame } from './bridge.js?v=20261029-mobile-r2';
+import { buildCard, logoImage } from './card.js?v=20261029-mobile-r2';
+import { loadScheme, paintScheme } from './scheme.js?v=20261029-mobile-r2';
+import { loadLibrary, findShot, pickSrc } from './library.js?v=20261029-mobile-r2';
 
 const LOGO_VIEWBOX = '150 248 296 126';
 const $ = (s, r = document) => r.querySelector(s);
@@ -12,12 +12,13 @@ const el = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
     if (v == null || v === false) continue;
-    if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v;
+    if (k === 'class') e.className = v; else if (k === 'text') e.textContent = typo(v);
     else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : v);
   }
   for (const k of kids.flat()) if (k != null) e.append(k);
   return e;
 };
+const typo = s => String(s).replace(/(^|[\s(])((?:в|во|на|к|ко|с|со|у|о|об|от|до|по|из|за|и|а|не)) /gi, '$1$2\u00a0').replace(/(\d) (кг|см|мм|₽|м²|дней)/g,'$1\u00a0$2');
 const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k] ?? '');
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -28,6 +29,8 @@ let D, C, S, R, TR, view, stageTier, zoomTier = null;
 const layers = new Map();      // `${id}@${tier}` -> Promise<layers>
 const hitData = new Map();     // id -> {w,h,data}
 let scheme = null;            // данные мини-схемы (кадр 480 + маска зон)
+const sheetState = 'min'; // compatibility for the desktop summary
+function cycleSheet() {}
 let personalized = false, renderQueued = false, thumbTimer = 0, saveTimer = 0;
 const zoom = { s: 1, x: 0, y: 0 };
 
@@ -43,20 +46,23 @@ async function boot() {
   const saved = validState(D, store.get(D.site.storageKey));
   S = { ...(fromUrl || saved || D.site.defaultConfig) };
   view = D.site.heroFrame;
+  $('#app').replaceChildren();
   buildUI();
   const stageCanvas = $('#stage-canvas');
+  // Keep the photographic overlay aligned when the canvas is fitted to a wide, short iframe.
+  if (window.ResizeObserver) new ResizeObserver(placeShot).observe(stageCanvas);
   const r = createRenderer(stageCanvas); R = r.r;
   document.documentElement.dataset.renderer = r.kind;
   TR = createRenderer(document.createElement('canvas')).r;
   stageTier = pickTier();
   await showView(view);
-  loadLibrary(BASE).then(updateShot);
+  loadLibrary(BASE).then(updateShot).catch(e => console.warn('Photo library unavailable; using the live renderer', e));
   loadScheme(BASE, D.site.heroFrame).then(s => { scheme = s; paintSchemes(); }).catch(e => console.warn(e));
   document.documentElement.classList.add('ready');
   track('atelier_open', { config_id: encodeId(D, S), renderer: r.kind, embedded: inFrame });
   scheduleThumbs(0);
   // предзагрузка остальных кадров в фоне
-  D.order.forEach(id => getLayers(id, 480));
+  // Thumbnails load sequentially below; do not start a second competing preload.
   window.addEventListener('resize', () => { const t = pickTier(); if (t !== stageTier) { stageTier = t; showView(view); } else { placeShot(); updateShot(); } });
   matchMedia('(max-width: 1023px)').addEventListener('change', placePresets);
   on('lead-submitted', () => { track('lead_submit', { config_id: encodeId(D, S) }); openResult('submitted'); });
@@ -65,7 +71,7 @@ async function boot() {
 
 const pickTier = () => {
   const w = ($('.stage')?.clientWidth || 800) * Math.min(window.devicePixelRatio || 1, 2);
-  return w > 1350 ? 2400 : 1280;
+  return !isMobile() && w > 1350 ? 2400 : 1280;
 };
 
 function getLayers(id, tier) {
@@ -96,6 +102,8 @@ async function showView(id) {
   const stage = $('.stage');
   stage.classList.toggle('portrait', !!D.frameById.get(id).portrait);
   stage.setAttribute('aria-busy', 'true');
+  $('.stage-retry').hidden = true;
+  $('.stage-status').textContent = 'Загружаем изображение…';
   resetZoom();
   updateShot();
   // мгновенно — миниатюра, затем полноценный tier
@@ -108,10 +116,11 @@ async function showView(id) {
     drawStage();
     ensureHit(id, small);
     // освобождаем память GPU от лишних крупных tier других кадров на телефоне
-    if (isMobile()) for (const k of [...R.cache.keys()]) if (!k.startsWith(id + '@') && !k.endsWith('@480') && !k.endsWith(`@${stageTier}`)) R.drop(k);
+    if (isMobile()) for (const k of [...R.cache.keys()]) if (!k.startsWith(id + '@') && !k.endsWith('@480')) R.drop(k);
   } catch (err) {
-    console.error(err); toast(C.errors.load);
-  } finally { stage.setAttribute('aria-busy', 'false'); }
+    console.error(err); $('.stage-retry').hidden = false;
+    $('.stage-status').textContent = 'Фото не загрузилось. Нажмите «Повторить».';
+  } finally { if(view===id){stage.setAttribute('aria-busy', 'false'); if ($('.stage-retry').hidden) $('.stage-status').textContent = '';} }
   document.querySelectorAll('.view').forEach(b => b.setAttribute('aria-selected', b.dataset.id === id ? 'true' : 'false'));
 }
 
@@ -119,10 +128,11 @@ function currentTier() { return zoomTier && R.cache.has(`${view}@${zoomTier}`) ?
 
 function drawStage() {
   updateShot();
+  const drawView = view;
   const k = `${view}@${currentTier()}`;
   const p = layers.get(k);
   if (!p) return;
-  p.then(l => { const t0 = performance.now(); R.draw(k, l, zoneSetup(view)); lastDraw = performance.now() - t0; });
+  p.then(l => { if(view!==drawView)return; const t0 = performance.now(); R.draw(k, l, zoneSetup(drawView)); lastDraw = performance.now() - t0; }).catch(()=>{});
 }
 let lastDraw = 0;
 // Замер для проверки бюджета «< 100 мс»: n перерисовок видимого кадра с ожиданием GPU (readPixels)
@@ -249,11 +259,33 @@ function swatchBtn(sw, kind) {
 function paletteBlock(kind) {
   const coll = D.collections.find(c => c.id === S.collection);
   const groups = FAMILY_ORDER.map(f => [f, coll.swatches.filter(s => s.family === f)]).filter(([, l]) => l.length);
-  return el('div', { class: 'palette' },
+  const search=el('input',{type:'search',class:'palette-search',placeholder:'Номер или цвет','aria-label':'Найти оттенок'});
+  const filter=el('select',{'aria-label':'Группа оттенков'},el('option',{value:'all',text:'Все цвета'}),groups.map(([f])=>el('option',{value:f,text:C.families[f]})));
+  const empty=el('p',{class:'palette-empty',hidden:true,text:'Оттенок не найден. Попробуйте другой номер или цвет.'});
+  const block=el('div', { class: 'palette' },
+    el('div',{class:'palette-tools'},search,filter),
     groups.map(([f, list]) => el('div', { class: 'fam' },
       el('div', { class: 'fam-name', text: C.families[f] }),
       el('div', { class: 'sw-grid' }, list.sort((a, b) => a.n - b.n).map(s => swatchBtn(s, kind))))),
-    el('p', { class: 'disclaimer', text: C.palette.disclaimer }));
+    empty,el('p', { class: 'disclaimer', text: C.palette.disclaimer }));
+  const apply=()=>{
+    const q=search.value.toLocaleLowerCase('ru').trim().replace(/^№\s*/,'');
+    let count=0;
+    block.querySelectorAll('.fam').forEach((group,i)=>{
+      let visible=0;
+      group.querySelectorAll('.sw').forEach(b=>{
+        const sw=coll.byId.get(b.dataset.id);
+        const matchNumber=/^\d+$/.test(q)?sw.n===Number(q):true;
+        const matchText=/^\d+$/.test(q)||!q||(sw.name+' '+sw.np).toLocaleLowerCase('ru').includes(q);
+        b.hidden=!(matchNumber&&matchText&&(filter.value==='all'||filter.value===groups[i][0]));
+        if(!b.hidden)visible++;
+      });
+      group.hidden=!visible;count+=visible;
+    });
+    empty.hidden=!!count;
+  };
+  search.addEventListener('input',apply);filter.addEventListener('change',apply);
+  return block;
 }
 
 // «Сейчас выбираете»: мини-схема зоны + имя зоны + текущий образец + сноска с деталями. Липкий внутри шага.
@@ -297,6 +329,7 @@ function step(no, key, title, body) {
 }
 
 function openStep(key, toggle = false) {
+  if (isMobile()) { selectMobilePanel(key); return; }
   document.querySelectorAll('.step').forEach(s => {
     const open = s.dataset.step === key ? (toggle ? !s.classList.contains('open') : true) : false;
     s.classList.toggle('open', open);
@@ -317,8 +350,6 @@ function openStep(key, toggle = false) {
 
 function buildUI() {
   const app = $('#app');
-  const logo = el('a', { class: 'logo', href: 'https://' + D.site.contacts.site, target: '_blank', rel: 'noopener' });
-  inlineLogo(logo);
   const coll = D.collections.find(c => c.id === S.collection);
 
   const views = el('div', { class: 'views', role: 'tablist', 'aria-label': C.views.label },
@@ -326,12 +357,15 @@ function buildUI() {
       class: 'view', role: 'tab', type: 'button', 'data-id': id, 'aria-selected': 'false',
       'aria-label': fmt(C.a11y.view, { name: C.views[id] || id }), title: C.views[id] || id,
       onclick: () => { if (id !== view) { track('view_switch', { view: id }); showView(id); } },
-    }, el('canvas', { width: 48, height: 32 }))));
+    }, el('canvas', { width: 48, height: 32 }), el('span', {class:'view-label',text: ({'0350':'Общий вид','0438':'Профиль','0453':'Ракурс ¾','0368':'Обивка','0718':'Сложение'})[id] || C.views[id]}))));
 
-  const stage = el('div', { class: 'stage', tabindex: '0', role: 'img', 'aria-label': C.a11y.stage },
+  const stage = el('div', { class: 'stage', tabindex: '0', role: 'group', 'aria-label': C.a11y.stage },
     el('div', { class: 'zoomer' }, el('canvas', { id: 'stage-canvas' }), el('img', { class: 'shot', alt: '', 'aria-hidden': 'true', decoding: 'async', hidden: true })),
     el('button', { class: 'zoom-out', type: 'button', hidden: true, text: C.stage.zoomOut, onclick: () => resetZoom(true) }),
     el('span', { class: 'stage-note', hidden: true, text: C.ropes.stageNote }),
+    el('span', {class:'stage-status', role:'status', 'aria-live':'polite'}),
+    el('button', {class:'stage-retry', type:'button',hidden:true,text:'Повторить',onclick:()=>showView(view)}),
+    el('button', {class:'zoom-in',type:'button','aria-label':'Увеличить фото',onclick:e=>{e.stopPropagation();const r=stage.getBoundingClientRect();toggleZoom(r.left+r.width/2,r.top+r.height/2);}}, el('span',{class:'zoom-icon','aria-hidden':'true'})),
     el('span', { class: 'zoom-hint', text: matchMedia('(hover: hover) and (pointer: fine)').matches ? C.stage.zoomHintDesktop : C.stage.zoomHint }));
 
   const presets = el('section', { class: 'presets', 'aria-labelledby': 'presets-title' },
@@ -395,7 +429,7 @@ function buildUI() {
     el('div', { class: 'panel-scroll' }, el('div', { class: 'presets-slot' }), steps), foot);
 
   app.append(
-    el('header', { class: 'top' }, logo),
+    el('header', { class: 'top' }, el('h1',{class:'mobile-heading',text:'Создайте свой M44'}), el('button',{class:'mobile-share',type:'button','aria-label':'Поделиться конфигурацией',onclick:share},el('span',{class:'share-ico','aria-hidden':'true'}))),
     el('main', { class: 'main' },
       el('section', { class: 'intro' },
         el('h1', { text: C.hero.title }), el('p', { class: 'lead', text: C.hero.lead }), el('p', { class: 'sub', text: C.hero.sub })),
@@ -408,14 +442,68 @@ function buildUI() {
   bindStage(stage);
   placePresets();
   new ResizeObserver(placeShot).observe($('#stage-canvas'));
-  bindSheet(panel, handle);
+  buildMobileNavigation(panel);
   syncUI();
 }
 
-// Коллекция сочетаний: на телефоне — на первом экране под фото, на десктопе — в панели.
-function placePresets() {
-  const p = $('.presets'), to = isMobile() ? $('.presets-home') : $('.presets-slot');
-  if (p && to && p.parentElement !== to) to.append(p);
+
+// Mobile: one stable preview, direct section tabs and one scrollable choices region.
+let mobilePanel = 'presets';
+const mobileSections = [['presets','Сочетания'],['material','Материал'],['main','Обивка'],['contrast','Кант'],['frame','Рама'],['rope','Тросы']];
+function buildMobileNavigation(panel) {
+  const nav=el('div',{class:'mobile-nav',role:'tablist','aria-label':'Настройки реформера'});
+  for(const [key,label] of mobileSections) nav.append(el('button',{
+    class:'mobile-tab',id:'mobile-tab-'+key,type:'button',role:'tab','data-mobile-panel':key,
+    'aria-controls':'mobile-panel-'+key,'aria-selected':'false',tabindex:'-1',
+    onclick:()=>selectMobilePanel(key)
+  },el('span',{text:label})));
+  nav.addEventListener('keydown',e=>{
+    const keys=mobileSections.map(s=>s[0]),i=keys.indexOf(mobilePanel);
+    let n=i;
+    if(e.key==='ArrowRight')n=(i+1)%6;
+    else if(e.key==='ArrowLeft')n=(i+5)%6;
+    else if(e.key==='ArrowDown')n=(i+3)%6;
+    else if(e.key==='ArrowUp')n=(i+3)%6;
+    else if(e.key==='Home')n=0;
+    else if(e.key==='End')n=5;else return;
+    e.preventDefault();selectMobilePanel(keys[n]);nav.children[n].focus();
+  });
+  panel.insertBefore(nav,$('.panel-scroll'));
+  placePresets();
+}
+function selectMobilePanel(key) {
+  mobilePanel=key;
+  if(!isMobile())return;
+  for(const [k] of mobileSections){
+    const item=k==='presets'?$('.presets'):$('.step[data-step="'+k+'"]');
+    item.id='mobile-panel-'+k;item.hidden=k!==key;
+    item.setAttribute('role','tabpanel');item.setAttribute('aria-labelledby','mobile-tab-'+k);
+    const tab=$('[data-mobile-panel="'+k+'"]');
+    tab.setAttribute('aria-selected',String(k===key));tab.tabIndex=k===key?0:-1;
+    if(k!=='presets'){
+      item.classList.toggle('open',k===key);
+      $('.step-body',item).hidden=k!==key;
+      $('.step-head',item).setAttribute('aria-expanded',String(k===key));
+    }
+  }
+  $('.panel-scroll').scrollTop=0;
+  paintSchemes();
+  if(key==='main'||key==='contrast')track('palette_open',{step:key});
+}
+function placePresets(){
+  const p=$('.presets'),to=$('.presets-slot');
+  if(p&&to&&p.parentElement!==to)to.append(p);
+  if(!$('.mobile-nav'))return;
+  delete document.body.dataset.sheet;document.body.classList.remove('sheet-open');
+  if(isMobile())selectMobilePanel(mobilePanel);
+  else {
+   document.querySelectorAll('.palette-search').forEach(input=>{input.value='';});
+   document.querySelectorAll('.palette-tools select').forEach(select=>{select.value='all';select.dispatchEvent(new Event('change'));});
+   for(const [key] of mobileSections){
+    const item=key==='presets'?p:$('.step[data-step="'+key+'"]');
+    item.hidden=false;item.removeAttribute('role');item.removeAttribute('aria-labelledby');
+   }
+  }
 }
 
 // ---------- гибрид: готовое изображение из библиотеки или живая перекраска ----------
@@ -498,37 +586,6 @@ function syncUI() {
     el('span', { class: 'sheet-cta', 'data-dir': sheetState === 'full' ? 'down' : 'up', text: { min: C.actions.sheetOpen, half: C.actions.sheetExpand, full: C.actions.sheetClose }[sheetState] }));
 }
 
-// ---------- шторка (мобильные) ----------
-let sheetState = 'min';
-function setSheet(s) {
-  sheetState = s;
-  const p = $('.panel'); p.dataset.sheet = s;
-  const h = $('.sheet-handle');
-  h.setAttribute('aria-expanded', String(s !== 'min'));
-  h.setAttribute('aria-label', s === 'min' ? C.actions.sheetLabelOpen : s === 'half' ? C.actions.sheetLabelFull : C.actions.sheetLabelClose);
-  document.body.dataset.sheet = s;
-  // кадр остаётся главным: при открытой шторке заголовок сворачивается, фото поднимается
-  document.body.classList.toggle('sheet-open', s !== 'min');
-  if (s !== 'min' && isMobile()) window.scrollTo({ top: 0 });
-  syncUI();
-}
-function cycleSheet() { setSheet(sheetState === 'min' ? 'half' : sheetState === 'half' ? 'full' : 'min'); }
-function bindSheet(panel, handle) {
-  let y0 = null, moved = false;
-  handle.addEventListener('pointerdown', e => { if (!isMobile()) return; y0 = e.clientY; moved = false; handle.setPointerCapture(e.pointerId); });
-  handle.addEventListener('pointermove', e => { if (y0 != null && Math.abs(e.clientY - y0) > 12) moved = true; });
-  handle.addEventListener('pointerup', e => {
-    if (y0 == null) return;
-    const dy = e.clientY - y0; y0 = null;
-    if (!moved) return;
-    const order = ['min', 'half', 'full'];
-    let i = order.indexOf(sheetState) + (dy < 0 ? 1 : -1);
-    setSheet(order[Math.max(0, Math.min(2, i))]);
-    handle.dataset.dragged = '1'; setTimeout(() => delete handle.dataset.dragged, 50);
-  });
-  handle.addEventListener('click', e => { if (handle.dataset.dragged) e.stopImmediatePropagation(); }, true);
-}
-
 // ---------- сцена: тап по зоне, подсветка, зум ----------
 const ZONE_STEP = ['main', 'contrast', 'frame'];
 function bindStage(stage) {
@@ -545,6 +602,7 @@ function bindStage(stage) {
   stage.addEventListener('pointerleave', () => stage.classList.remove('hot'));
 
   stage.addEventListener('pointerdown', e => {
+    if(e.target.closest('button'))return;
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     stage.setPointerCapture(e.pointerId);
     if (pts.size === 1) start = { x: e.clientX, y: e.clientY, t: performance.now(), zx: zoom.x, zy: zoom.y, moved: false };
@@ -619,7 +677,7 @@ function applyZoom() {
     track('zoom', { view });
     zoomTier = isMobile() ? 2400 : 3600;
     updateShot();
-    if (zoomTier > stageTier) getLayers(view, zoomTier).then(() => render()); else zoomTier = null;
+    if (zoomTier > stageTier) getLayers(view, zoomTier).then(() => render()).catch(()=>{zoomTier=null;toast('Не удалось загрузить детализацию. Попробуйте ещё раз.');}); else zoomTier = null;
   }
 }
 function resetZoom(user = false) {
@@ -711,4 +769,5 @@ async function openResult(mode) {
   } catch (e) { console.error(e); }
 }
 
-boot().catch(e => { console.error(e); document.body.classList.add('failed'); });
+boot().catch(e => { console.error(e); $('#app').replaceChildren(el('div',{class:'boot-error'},el('h1',{text:'Не удалось открыть конструктор'}),el('p',{text:'Проверьте соединение и попробуйте ещё раз. Ваш выбор сохранён.'}),el('button',{class:'btn primary',type:'button',text:'Загрузить снова',onclick:()=>location.reload()}))); });
+

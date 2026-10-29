@@ -1,12 +1,16 @@
 // Загрузка конфигов и коллекций, семейства оттенков, ID конфигурации.
-import { hexToLin } from './renderer.js?v=d010e5aa';
+import { hexToLin } from './renderer.js?v=20261029-mobile-r2';
 
 export const BASE = new URL('../../', import.meta.url).href;
 
 const getJSON = async p => {
-  const r = await fetch(BASE + p, { cache: 'no-cache' });
-  if (!r.ok) throw new Error('load ' + p);
-  return r.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const r = await fetch(BASE + p, { cache: 'no-cache', signal: controller.signal });
+    if (!r.ok) throw new Error('load ' + p);
+    return await r.json();
+  } finally { clearTimeout(timer); }
 };
 
 function oklch(hex) {
@@ -78,3 +82,4 @@ export function decodeId(D, id) {
 export function validState(D, st) {
   try { return st && decodeId(D, encodeId(D, st)) ? st : null; } catch { return null; }
 }
+
