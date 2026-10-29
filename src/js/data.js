@@ -64,7 +64,9 @@ export function findSwatch(D, id) {
 
 // ID: M44-K50-K56-FG-RB
 export function encodeId(D, st) {
-  const f = D.frames.frames.find(x => x.id === st.frame), r = D.frames.ropes.find(x => x.id === st.rope);
+  // Retired white ropes stay readable in saved configurations, but always resolve to black.
+  const rope = st.rope === 'white' ? 'black' : st.rope;
+  const f = D.frames.frames.find(x => x.id === st.frame), r = D.frames.ropes.find(x => x.id === rope);
   return [D.site.product, st.main, st.contrast, f?.code, r?.code].join('-');
 }
 
@@ -74,12 +76,13 @@ export function decodeId(D, id) {
   if (p.length !== 5 || p[0] !== D.site.product.toUpperCase()) return null;
   const m = findSwatch(D, p[1]), c = findSwatch(D, p[2]);
   const f = D.frames.frames.find(x => x.code === p[3] && !x.hidden);
-  const r = D.frames.ropes.find(x => x.code === p[4] && !x.hidden);
+  const ropeCode = p[4] === 'RW' ? 'RB' : p[4];
+  const r = D.frames.ropes.find(x => x.code === ropeCode && !x.hidden);
   if (!m || !c || !f || !r || m.coll.id !== c.coll.id) return null;
   return { collection: m.coll.id, main: m.sw.id, contrast: c.sw.id, frame: f.id, rope: r.id };
 }
 
 export function validState(D, st) {
-  try { return st && decodeId(D, encodeId(D, st)) ? st : null; } catch { return null; }
+  try { return st ? decodeId(D, encodeId(D, st)) : null; } catch { return null; }
 }
 

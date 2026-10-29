@@ -1,6 +1,6 @@
 // ECORA M44 Digital Atelier — приложение.
 import { createRenderer, loadFrameLayers, zoneParams } from './renderer.js?v=20261029-mobile-r2';
-import { BASE, loadAll, encodeId, decodeId, validState, findSwatch, FAMILY_ORDER } from './data.js?v=20261029-mobile-r2';
+import { BASE, loadAll, encodeId, decodeId, validState, findSwatch, FAMILY_ORDER } from './data.js?v=20261029-black-ropes';
 import { initBridge, on, post, track, inFrame } from './bridge.js?v=20261029-mobile-r2';
 import { buildCard, logoImage } from './card.js?v=20261029-mobile-r2';
 import { loadScheme, paintScheme } from './scheme.js?v=20261029-mobile-r2';
@@ -42,9 +42,12 @@ async function boot() {
   initBridge(D.site);
   document.title = C.meta.title;
   $('meta[name=description]')?.setAttribute('content', C.meta.description);
-  const fromUrl = decodeId(D, new URLSearchParams(location.search).get('c'));
-  const saved = validState(D, store.get(D.site.storageKey));
+  const requestedId = new URLSearchParams(location.search).get('c');
+  const fromUrl = decodeId(D, requestedId);
+  const storedState = store.get(D.site.storageKey);
+  const saved = validState(D, storedState);
   S = { ...(fromUrl || saved || D.site.defaultConfig) };
+  if ((fromUrl && /-RW$/i.test(requestedId.trim())) || (!fromUrl && saved && storedState.rope === 'white')) persist();
   view = D.site.heroFrame;
   $('#app').replaceChildren();
   buildUI();
@@ -188,9 +191,9 @@ function zoneAt(clientX, clientY) {
 
 // ---------- состояние ----------
 function setState(patch, event, props = {}) {
-  const prev = { ...S };
-  Object.assign(S, patch);
-  if (!validState(D, S)) { S = prev; return; }
+  const next = validState(D, { ...S, ...patch });
+  if (!next) return;
+  S = next;
   if (!personalized) { personalized = true; track('personalize_start', { first: event }); }
   if (event) track(event, { ...props, config_id: encodeId(D, S) });
   updateShot(); render(); scheduleThumbs(); syncUI();

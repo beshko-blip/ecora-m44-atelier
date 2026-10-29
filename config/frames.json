@@ -6,7 +6,7 @@
     {"id": "silver", "code": "FS", "mode": "recolor", "hex": "#B9BBBD", "hidden": false}
   ],
   "ropes": [
-    {"id": "black", "code": "RB", "mode": "original", "hex": "#151515", "hidden": false},
-    {"id": "white", "code": "RW", "mode": "photo", "hex": "#F2F2EE", "hidden": false, "preview": false, "previewReason": "перекраска чёрного троса в белый не прошла тест (review/phase1/rope_attempt.jpg); опция выбирается и идёт в заявку, на фото — чёрные тросы с пометкой; нужна досъёмка"}
+    {"id": "black", "code": "RB", "mode": "original", "hex": "#151515", "hidden": false}
   ]
 }
+
